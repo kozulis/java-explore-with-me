@@ -45,7 +45,8 @@ public class RequestServiceImpl implements RequestService {
     }
 
     @Override
-    public EventRequestStatusUpdateResult updateEventRequest(Long userId, Long eventId, EventRequestStatusUpdateRequest eventRequestStatusUpdateRequest) {
+    public EventRequestStatusUpdateResult updateEventRequest(
+            Long userId, Long eventId, EventRequestStatusUpdateRequest eventRequestStatusUpdateRequest) {
         checkUser(userId);
         Event event = checkEvent(eventId);
         if (!event.getInitiator().getId().equals(userId)) {

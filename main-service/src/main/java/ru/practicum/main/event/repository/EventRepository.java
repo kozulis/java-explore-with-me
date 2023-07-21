@@ -3,6 +3,8 @@ package ru.practicum.main.event.repository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import ru.practicum.main.event.model.Event;
 import ru.practicum.main.event.utils.EventState;
 
@@ -29,7 +31,21 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 //                                @Param("rangeStart") LocalDateTime rangeStart,
 //                                PageRequest pageable);
 
-    //TODO Рабочий ли запрос(см выше)?LM
+    //TODO Рабочий ли запрос(если нет - см выше)?LM
     List<Event> findAllByInitiatorIdInAndStateInAndCategoryIdInAndEventDateIsAfter(List<Long> users, List<EventState> states, List<Long> categories,
                                                                                    LocalDateTime rangeStart, PageRequest pageable);
+
+    @Query("select e from Event as e " +
+            "where (upper(e.annotation) like upper(concat('%', :text, '%')) " +
+            "or upper(e.description) like upper(concat('%', :text, '%')) or :text is null) " +
+            "and (:categories is null or e.category.id in (:categories)) " +
+            "and (:paid is null or e.paid = :paid) " +
+            "and (cast(:rangeStart as timestamp) is null or e.eventDate >= :rangeStart) " +
+            "and (cast(:rangeEnd as timestamp) is null or e.eventDate <= :rangeEnd)")
+    List<Event> getEventsSort(@Param("text") String text,
+                              @Param("categories") List<Long> categories,
+                              @Param("paid") Boolean paid,
+                              @Param("rangeStart") LocalDateTime rangeStart,
+                              @Param("rangeEnd") LocalDateTime rangeEnd,
+                              Pageable pageable);
 }
