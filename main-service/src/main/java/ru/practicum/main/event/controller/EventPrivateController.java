@@ -47,7 +47,7 @@ public class EventPrivateController {
     public EventFullDto updatePrivateEventById(@PathVariable Long userId, @PathVariable Long eventId,
                                                @RequestBody @Valid UpdateEventUserRequest updateEventUserRequest) {
         log.info("Запрос на изменение данных события с id = {} от пользователя с id = {}", eventId, userId);
-        return eventService.updatePrivateEventById(userId, eventId, updateEventUserRequest);
+        return eventService.updatePrivateEvent(userId, eventId, updateEventUserRequest);
     }
 
     @GetMapping("/{eventId}/requests")

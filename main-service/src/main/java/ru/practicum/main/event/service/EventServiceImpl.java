@@ -7,14 +7,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.main.category.model.Category;
 import ru.practicum.main.category.repository.CategoryRepository;
-import ru.practicum.main.event.dto.EventFullDto;
-import ru.practicum.main.event.dto.EventShortDto;
-import ru.practicum.main.event.dto.NewEventDto;
-import ru.practicum.main.event.dto.UpdateEventUserRequest;
+import ru.practicum.main.event.dto.*;
 import ru.practicum.main.event.mapper.EventMapper;
 import ru.practicum.main.event.model.Event;
 import ru.practicum.main.event.repository.EventRepository;
 import ru.practicum.main.event.utils.EventState;
+import ru.practicum.main.exception.BadRequestException;
 import ru.practicum.main.exception.ConflictException;
 import ru.practicum.main.exception.NotFoundException;
 import ru.practicum.main.user.model.User;
@@ -69,19 +67,14 @@ public class EventServiceImpl implements EventService {
         return EventMapper.INSTANCE.toEventFullDto(event);
     }
 
+    @Transactional
     @Override
-    public EventFullDto updatePrivateEventById(Long userId, Long eventId, UpdateEventUserRequest updateEventUserRequest) {
+    public EventFullDto updatePrivateEvent(Long userId, Long eventId, UpdateEventUserRequest updateEventUserRequest) {
         checkUser(userId);
         Event event = checkEvent(eventId);
         if (!event.getInitiator().getId().equals(userId)) {
             log.warn("Изменить данные события может только организатор.");
             throw new ConflictException("Изменить данные события может только организатор.");
-        }
-
-
-        if (event.getState().equals(EventState.PUBLISHED)) {
-            log.warn("Нельзя изменить опубликованное событие.");
-            throw new ConflictException("Нельзя изменить опубликованное событие.");
         }
 
         Optional.ofNullable(updateEventUserRequest.getEventDate()).ifPresent(eventDate -> {
@@ -116,6 +109,10 @@ public class EventServiceImpl implements EventService {
         Optional.ofNullable(updateEventUserRequest.getStateAction()).ifPresent(userStateAction -> {
             switch (userStateAction) {
                 case CANCEL_REVIEW:
+                    if (event.getState().equals(EventState.PUBLISHED)) {
+                        log.warn("Нельзя изменить опубликованное событие.");
+                        throw new ConflictException("Нельзя изменить опубликованное событие.");
+                    }
                     event.setState(EventState.CANCELED);
                     break;
                 case SEND_TO_REVIEW:
@@ -127,6 +124,86 @@ public class EventServiceImpl implements EventService {
         Optional.ofNullable(updateEventUserRequest.getTitle()).ifPresent(event::setTitle);
 
         log.info("Событие с id = {} обновлено пользователем с id = {}.", eventId, userId);
+        return EventMapper.INSTANCE.toEventFullDto(eventRepository.save(event));
+    }
+
+    @Override
+    public List<EventFullDto> getAdminEvents(List<Long> users, List<EventState> states, List<Long> categories,
+                                             LocalDateTime rangeStart, LocalDateTime rangeEnd, Integer from, Integer size) {
+
+        log.info("Получение информации о событиях с параметрами: users {}, states {}, categories {}, " +
+                "rangeStart {}, rangeEnd {}, from {}, size {}", users, states, categories, rangeStart, rangeEnd, from, size);
+        validateDates(rangeStart, rangeEnd);
+        PageRequest page = PageRequest.of(from, size);
+        //TODO Рабочий ли запрос(см репозиторий)?LM
+        List<Event> events = eventRepository.findAllByInitiatorIdInAndStateInAndCategoryIdInAndEventDateIsAfter(
+                users, states, categories, getRangeStart(rangeStart), page);
+
+        if (rangeEnd != null) {
+            events = getEventsBeforeRangeEnd(events, rangeEnd);
+        }
+
+        return events.stream().map(EventMapper.INSTANCE::toEventFullDto).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public EventFullDto updateAdminEvent(Long eventId, UpdateEventAdminRequest updateEventAdminRequest) {
+        Event event = checkEvent(eventId);
+
+        Optional.ofNullable(updateEventAdminRequest.getEventDate()).ifPresent(eventDate -> {
+            if (eventDate.isBefore(event.getPublishedOn().minusHours(1))) {
+                log.warn("Дата начала изменяемого события должна быть не ранее чем за час от даты публикации.");
+                throw new ConflictException("дата начала изменяемого " +
+                        "события должна быть не ранее чем за час от даты публикации");
+            }
+            event.setEventDate(eventDate);
+        });
+
+        Optional.ofNullable(updateEventAdminRequest.getAnnotation()).ifPresent(event::setAnnotation);
+
+        Optional.ofNullable(updateEventAdminRequest.getCategory()).ifPresent(catId -> {
+            Category category = checkCategory(catId);
+            event.setCategory(category);
+        });
+
+        Optional.ofNullable(updateEventAdminRequest.getDescription()).ifPresent(event::setDescription);
+
+        Optional.ofNullable(updateEventAdminRequest.getLocation()).ifPresent(location -> {
+            event.setLat(location.getLat());
+            event.setLon(location.getLon());
+        });
+
+        Optional.ofNullable(updateEventAdminRequest.getPaid()).ifPresent(event::setPaid);
+
+        Optional.ofNullable(updateEventAdminRequest.getParticipantLimit()).ifPresent(event::setParticipantLimit);
+
+        Optional.ofNullable(updateEventAdminRequest.getRequestModeration()).ifPresent(event::setRequestModeration);
+
+
+        Optional.ofNullable(updateEventAdminRequest.getStateAction()).ifPresent(adminStateAction -> {
+            switch (adminStateAction) {
+                case REJECT_EVENT:
+                    if (event.getState().equals(EventState.PUBLISHED)) {
+                        log.warn("Нельзя отклонить опубликованное событие.");
+                        throw new ConflictException("Нельзя отклонить опубликованное событие.");
+                    }
+                    event.setState(EventState.CANCELED);
+                    break;
+                case PUBLISH_EVENT:
+                    if (!event.getState().equals(EventState.PENDING)) {
+                        log.warn("Нельзя изменить событие, если оно в состоянии ожидания публикации.");
+                        throw new ConflictException("Нельзя изменить событие, если оно в состоянии ожидания публикации.");
+                    }
+                    event.setState(EventState.PENDING);
+                    event.setPublishedOn(LocalDateTime.now());
+                    break;
+            }
+        });
+
+        Optional.ofNullable(updateEventAdminRequest.getTitle()).ifPresent(event::setTitle);
+
+        log.info("Событие с id = {} обновлено администратором.", eventId);
         return EventMapper.INSTANCE.toEventFullDto(eventRepository.save(event));
     }
 
@@ -153,6 +230,23 @@ public class EventServiceImpl implements EventService {
                     return new NotFoundException(String.format("Событие с id %d не найдено.", eventId));
                 }
         );
+    }
+
+    private void validateDates(LocalDateTime rangeStart, LocalDateTime rangeEnd) {
+        if (rangeStart != null && rangeEnd != null) {
+            if (rangeEnd.isBefore(rangeStart)) {
+                throw new BadRequestException("rangeEnd не может быть раньше rangeStart.");
+            }
+        }
+    }
+
+    private List<Event> getEventsBeforeRangeEnd(List<Event> events, LocalDateTime rangeEnd) {
+        return events.stream().filter(event -> event.getEventDate().isBefore(rangeEnd)).collect(Collectors.toList());
+    }
+
+    private LocalDateTime getRangeStart(LocalDateTime rangeStart) {
+        if (rangeStart == null) return LocalDateTime.now();
+        return rangeStart;
     }
 
 }
