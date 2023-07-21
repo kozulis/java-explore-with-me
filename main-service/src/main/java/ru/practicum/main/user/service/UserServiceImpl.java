@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.main.exseption.NotFoundException;
+import ru.practicum.main.exception.NotFoundException;
 import ru.practicum.main.user.dto.NewUserRequest;
 import ru.practicum.main.user.dto.UserDto;
 import ru.practicum.main.user.mapper.UserMapper;
@@ -37,23 +37,24 @@ public class UserServiceImpl implements UserService {
         PageRequest page = PageRequest.of(from, size);
 
         if (ids == null) {
-            userList = userRepository.findAll(page).getContent();
+            userList = userRepository.findAll(page).toList();
         } else {
-            userList = userRepository.findAllByIdIn(ids, page).getContent();
+            userList = userRepository.findAllByIdIn(ids, page);
         }
-        
+        log.info("Получение списка пользователей: ids {}, from = {}, size = {}", ids, from, size);
         return userList.stream()
                 .map(UserMapper.INSTANCE::toUserDto)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public void deleteUserById(Long id) {
-        userRepository.findById(id).orElseThrow(() -> {
-                    log.warn("Пользователь с id = {} не найден", id);
-                    return new NotFoundException(String.format("Пользователь с id %d не найден", id));
+    public void deleteUserById(Long userId) {
+        userRepository.findById(userId).orElseThrow(() -> {
+                    log.warn("Пользователь с id = {} не найден", userId);
+                    return new NotFoundException(String.format("Пользователь с id %d не найден", userId));
                 }
         );
-        userRepository.deleteById(id);
+        userRepository.deleteById(userId);
+        log.info("Пользователь с id = {} удален.", userId);
     }
 }

@@ -1,4 +1,4 @@
-package ru.practicum.main.exseption;
+package ru.practicum.main.exception;
 
 
 import lombok.extern.slf4j.Slf4j;
@@ -11,10 +11,13 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Slf4j
 @RestControllerAdvice
 public class ErrorHandler {
+
+    private static final String TIME_NOW = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -24,7 +27,7 @@ public class ErrorHandler {
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.name())
                 .reason("Unknown error.")
                 .message(e.getMessage())
-                .timestamp(LocalDateTime.now())
+                .timestamp(TIME_NOW)
                 .build();
     }
 
@@ -36,7 +39,7 @@ public class ErrorHandler {
                 .status(HttpStatus.BAD_REQUEST.name())
                 .reason("Incorrectly made request.")
                 .message(e.getMessage())
-                .timestamp(LocalDateTime.now())
+                .timestamp(TIME_NOW)
                 .build();
     }
 
@@ -48,7 +51,7 @@ public class ErrorHandler {
                 .status(HttpStatus.BAD_REQUEST.name())
                 .reason("Incorrectly made request.")
                 .message(e.getMessage())
-                .timestamp(LocalDateTime.now())
+                .timestamp(TIME_NOW)
                 .build();
     }
 
@@ -60,7 +63,7 @@ public class ErrorHandler {
                 .status(HttpStatus.NOT_FOUND.name())
                 .reason("The required object was not found.")
                 .message(e.getMessage())
-                .timestamp(LocalDateTime.now())
+                .timestamp(TIME_NOW)
                 .build();
     }
 
@@ -72,7 +75,7 @@ public class ErrorHandler {
                 .status(HttpStatus.CONFLICT.name())
                 .reason("For the requested operation the conditions are not met.")
                 .message(e.getMessage())
-                .timestamp(LocalDateTime.now())
+                .timestamp(TIME_NOW)
                 .build();
     }
 
@@ -84,7 +87,7 @@ public class ErrorHandler {
                 .status(HttpStatus.CONFLICT.name())
                 .reason("Integrity constraint has been violated.")
                 .message(e.getMessage())
-                .timestamp(LocalDateTime.now())
+                .timestamp(TIME_NOW)
                 .build();
     }
 
@@ -96,7 +99,7 @@ public class ErrorHandler {
                 .status(HttpStatus.CONFLICT.name())
                 .reason("Integrity constraint has been violated.")
                 .message(e.getMessage())
-                .timestamp(LocalDateTime.now())
+                .timestamp(TIME_NOW)
                 .build();
     }
 
