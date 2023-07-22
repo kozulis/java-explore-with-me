@@ -38,14 +38,14 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     @Query("select e from Event as e " +
             "where (upper(e.annotation) like upper(concat('%', :text, '%')) " +
             "or upper(e.description) like upper(concat('%', :text, '%')) or :text is null) " +
+            "and e.state = :state " +
             "and (:categories is null or e.category.id in (:categories)) " +
             "and (:paid is null or e.paid = :paid) " +
-            "and (cast(:rangeStart as timestamp) is null or e.eventDate >= :rangeStart) " +
-            "and (cast(:rangeEnd as timestamp) is null or e.eventDate <= :rangeEnd)")
+            "and e.eventDate >= :rangeStart")
     List<Event> getEventsSort(@Param("text") String text,
+                              @Param("state") EventState state,
                               @Param("categories") List<Long> categories,
                               @Param("paid") Boolean paid,
                               @Param("rangeStart") LocalDateTime rangeStart,
-                              @Param("rangeEnd") LocalDateTime rangeEnd,
                               Pageable pageable);
 }

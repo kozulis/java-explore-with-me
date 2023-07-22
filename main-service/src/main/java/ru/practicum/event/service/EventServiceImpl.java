@@ -43,10 +43,10 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public List<EventShortDto> getPrivateEvents(Long userId, Integer from, Integer size) {
+        log.info("Получение списка событий пользователя с id = {}, from {}, size {}", userId, from, size);
         checkUser(userId);
         PageRequest page = PageRequest.of(from, size);
         List<Event> events = eventRepository.findAllByInitiatorId(userId, page);
-        log.info("Получение списка событий пользователя с id = {}, from {}, size {}", userId, from, size);
         return events.stream()
                 .map(EventMapper.INSTANCE::toEventShortDto)
                 .collect(Collectors.toList());
@@ -55,6 +55,7 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional
     public EventFullDto savePrivateEvent(Long userId, NewEventDto newEventDto) {
+        log.info("Добавление события от пользователя с id = {}", userId);
         if (newEventDto.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
             log.warn("Событие не должно начинаться раньше, чем через 2 часа от текущего времени.");
             throw new ConflictException("Field: eventDate. Error: Событие не должно начинаться раньше," +
@@ -69,15 +70,16 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public EventFullDto getPrivateEventById(Long userId, Long eventId) {
+        log.info("Получение события с id = {} пользователя с id = {}", eventId, userId);
         checkUser(userId);
         Event event = checkEvent(eventId);
-        log.info("Получение события с id = {} пользователя с id = {}", eventId, userId);
         return EventMapper.INSTANCE.toEventFullDto(event);
     }
 
     @Transactional
     @Override
     public EventFullDto updatePrivateEvent(Long userId, Long eventId, UpdateEventUserRequest updateEventUserRequest) {
+        log.info("Изменение данных события с id = {} от пользователя с id = {}", eventId, userId);
         checkUser(userId);
         Event event = checkEvent(eventId);
         if (!event.getInitiator().getId().equals(userId)) {
@@ -141,7 +143,6 @@ public class EventServiceImpl implements EventService {
     @Override
     public List<EventFullDto> getAdminEvents(List<Long> users, List<EventState> states, List<Long> categories,
                                              LocalDateTime rangeStart, LocalDateTime rangeEnd, Integer from, Integer size) {
-
         log.info("Получение информации о событиях с параметрами: users {}, states {}, categories {}, " +
                 "rangeStart {}, rangeEnd {}, from {}, size {}", users, states, categories, rangeStart, rangeEnd, from, size);
         validateDates(rangeStart, rangeEnd);
@@ -160,6 +161,7 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional
     public EventFullDto updateAdminEvent(Long eventId, UpdateEventAdminRequest updateEventAdminRequest) {
+        log.info("Редактирование администратором события с id = {}", eventId);
         Event event = checkEvent(eventId);
 
         Optional.ofNullable(updateEventAdminRequest.getEventDate()).ifPresent(eventDate -> {
@@ -228,9 +230,9 @@ public class EventServiceImpl implements EventService {
         validateDates(rangeStart, rangeEnd);
         log.info("Получение событий с возможностью фильтрации.");
         LocalDateTime now = LocalDateTime.now();
-        if (rangeEnd == null) rangeEnd = now.plusYears(1);
-
+        EventState state = EventState.PUBLISHED;
         String sorting;
+
         if (sort.equals(EventSort.EVENT_DATE)) {
             sorting = "eventDate";
         } else if (sort.equals(EventSort.VIEWS)) {
@@ -240,15 +242,23 @@ public class EventServiceImpl implements EventService {
         }
 
         PageRequest page = PageRequest.of(from, size, Sort.by(sorting));
-        List<Event> sortedEvents = eventRepository.getEventsSort(text, categories, paid,
-                getRangeStart(rangeStart), rangeEnd, page);
+        List<Event> sortedEvents = eventRepository.getEventsSort(text, state, categories, paid,
+                getRangeStart(rangeStart), page);
+
+        if (rangeEnd == null) rangeEnd = now.plusYears(2);
+
+        sortedEvents = getEventsBeforeRangeEnd(sortedEvents, rangeEnd);
+
         if (onlyAvailable) {
             sortedEvents.removeIf(event -> event.getParticipantLimit().equals(Math.toIntExact(event.getConfirmedRequests())));
         }
+
         if (sortedEvents.isEmpty()) return Collections.emptyList();
+
         String uri = request.getRequestURI();
         LocalDateTime startDate = sortedEvents.stream().map(Event::getCreatedOn).min(Comparator.naturalOrder()).orElse(now);
         saveStats(request);
+
         Long views = getViews(uri, startDate, now);
         sortedEvents.forEach(event -> event.setViews(views));
         return sortedEvents.stream()
@@ -264,8 +274,10 @@ public class EventServiceImpl implements EventService {
             log.warn("Нельзя получить информацию о событии, которое не опубликовано.");
             throw new NotFoundException("Нельзя получить информацию о событии, которое не опубликовано.");
         }
+
         String uri = request.getRequestURI();
         saveStats(request);
+
         Long views = getViews(uri, event.getCreatedOn(), LocalDateTime.now());
         event.setViews(views);
         return EventMapper.INSTANCE.toEventFullDto(event);

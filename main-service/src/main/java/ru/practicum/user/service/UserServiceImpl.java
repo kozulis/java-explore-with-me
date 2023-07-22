@@ -25,6 +25,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto saveUser(NewUserRequest newUserRequest) {
+        log.info("Добавление нового пользователя {}", newUserRequest);
         User newUser = userRepository.save(UserMapper.INSTANCE.toUser(newUserRequest));
         log.info("Пользователь {} сохранен.", newUser);
         return UserMapper.INSTANCE.toUserDto(newUser);
@@ -33,6 +34,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public List<UserDto> getAll(List<Long> ids, Integer from, Integer size) {
+        log.info("Получение списка пользователей: ids {}, from = {}, size = {}", ids, from, size);
         List<User> userList;
         PageRequest page = PageRequest.of(from, size);
 
@@ -41,7 +43,6 @@ public class UserServiceImpl implements UserService {
         } else {
             userList = userRepository.findAllByIdIn(ids, page);
         }
-        log.info("Получение списка пользователей: ids {}, from = {}, size = {}", ids, from, size);
         return userList.stream()
                 .map(UserMapper.INSTANCE::toUserDto)
                 .collect(Collectors.toList());
@@ -49,6 +50,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteUserById(Long userId) {
+        log.info("Удаление пользователя с id = {}", userId);
         userRepository.findById(userId).orElseThrow(() -> {
                     log.warn("Пользователь с id = {} не найден", userId);
                     return new NotFoundException(String.format("Пользователь с id %d не найден", userId));

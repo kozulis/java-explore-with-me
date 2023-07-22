@@ -30,6 +30,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional
     public CategoryDto saveCategory(NewCategoryDto newCategoryDto) {
+        log.info("Добавление новой категории {}", newCategoryDto);
         Category category = CategoryMapper.INSTANCE.toCategory(newCategoryDto);
         log.info("Категория {} сохранена", category);
         return CategoryMapper.INSTANCE.toCategoryDto(categoryRepository.save(category));
@@ -38,6 +39,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional
     @Override
     public void deleteCategory(Long catId) {
+        log.info("Удаление категории с id = {}", catId);
         checkCategory(catId);
         if (!eventRepository.findByCategoryId(catId).isEmpty()) {
             log.info("Невозможно удалить категорию. Существуют события, связанные с категорией.");
@@ -50,6 +52,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional
     @Override
     public CategoryDto updateCategory(Long catId, NewCategoryDto newCategoryDto) {
+        log.info("Изменение категории {} с id = {}", newCategoryDto, catId);
         Category category = checkCategory(catId);
         category.setName(newCategoryDto.getName());
         log.info("Категория с id = {} обновлена", catId);
@@ -67,8 +70,8 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryDto getById(Long catId) {
-        Category category = checkCategory(catId);
         log.info("Получение категории с id = {}", catId);
+        Category category = checkCategory(catId);
         return CategoryMapper.INSTANCE.toCategoryDto(category);
     }
 
