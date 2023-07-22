@@ -1,7 +1,7 @@
 package ru.practicum.main.event.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class EventServiceImpl implements EventService {
 
@@ -40,6 +39,15 @@ public class EventServiceImpl implements EventService {
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final StatsClient statsClient;
+
+    public EventServiceImpl(EventRepository eventRepository, UserRepository userRepository,
+                            CategoryRepository categoryRepository,
+                            @Value("${stats-server.url}") String serverUrl) {
+        this.eventRepository = eventRepository;
+        this.userRepository = userRepository;
+        this.categoryRepository = categoryRepository;
+        this.statsClient = new StatsClient(serverUrl);
+    }
 
     @Override
     public List<EventShortDto> getPrivateEvents(Long userId, Integer from, Integer size) {
