@@ -23,7 +23,7 @@ public class NewEventDto {
     @NotBlank(message = "Поле annotation не должно быть пустым.")
     private String annotation;
 
-    @NotBlank(message = "Поле category не должно быть пустым.")
+    @NotNull(message = "Поле category не должно быть пустым.")
     private Long category;
 
     @Size(min = 20, max = 7000, message = "Поле description должно содержать min 20 и max 7000 символов.")
@@ -37,12 +37,12 @@ public class NewEventDto {
     @NotNull(message = "Поле location не должно быть пустым.")
     private Location location;
 
-    private Boolean paid;
+    private Boolean paid = false;
 
     @PositiveOrZero(message = "Поле participantLimit должно быть больше и равняться 0.")
-    private Integer participantLimit;
+    private Integer participantLimit = 0;
 
-    private Boolean requestModeration;
+    private Boolean requestModeration = true;
 
     @Size(min = 3, max = 120, message = "Поле title должно содержать min 3 и max 120 символов.")
     @NotBlank(message = "Поле title не должно быть пустым.")

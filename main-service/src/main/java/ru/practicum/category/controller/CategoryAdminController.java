@@ -3,6 +3,7 @@ package ru.practicum.category.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.category.dto.CategoryDto;
 import ru.practicum.category.dto.NewCategoryDto;
@@ -13,12 +14,13 @@ import javax.validation.Valid;
 @RestController
 @Slf4j
 @RequiredArgsConstructor
+@Validated
 @RequestMapping("/admin/categories")
 public class CategoryAdminController {
 
     private final CategoryService categoryService;
 
-    @GetMapping
+    @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CategoryDto addNewCategory(@RequestBody @Valid NewCategoryDto newCategoryDto) {
         log.info("Запрос на добавление новой категории {}", newCategoryDto);

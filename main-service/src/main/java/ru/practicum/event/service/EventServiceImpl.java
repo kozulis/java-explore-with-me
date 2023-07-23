@@ -58,7 +58,7 @@ public class EventServiceImpl implements EventService {
         log.info("Добавление события от пользователя с id = {}", userId);
         if (newEventDto.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
             log.warn("Событие не должно начинаться раньше, чем через 2 часа от текущего времени.");
-            throw new ConflictException("Field: eventDate. Error: Событие не должно начинаться раньше," +
+            throw new BadRequestException("Field: eventDate. Error: Событие не должно начинаться раньше," +
                     " чем через 2 часа от текущего времени.");
         }
         User user = checkUser(userId);
@@ -90,7 +90,7 @@ public class EventServiceImpl implements EventService {
         Optional.ofNullable(updateEventUserRequest.getEventDate()).ifPresent(eventDate -> {
             if (eventDate.isBefore(LocalDateTime.now().plusHours(2))) {
                 log.warn("Событие не должно начинаться раньше, чем через 2 часа от текущего времени.");
-                throw new ConflictException("Событие не должно начинаться раньше," +
+                throw new BadRequestException("Событие не должно начинаться раньше," +
                         " чем через 2 часа от текущего времени.");
             }
             event.setEventDate(eventDate);
@@ -226,16 +226,16 @@ public class EventServiceImpl implements EventService {
     @Override
     public List<EventShortDto> getPublicEvents(String text, List<Long> categories, Boolean paid,
                                                LocalDateTime rangeStart, LocalDateTime rangeEnd, Boolean onlyAvailable,
-                                               EventSort sort, Integer from, Integer size, HttpServletRequest request) {
+                                               String sort, Integer from, Integer size, HttpServletRequest request) {
         validateDates(rangeStart, rangeEnd);
         log.info("Получение событий с возможностью фильтрации.");
         LocalDateTime now = LocalDateTime.now();
         EventState state = EventState.PUBLISHED;
         String sorting;
 
-        if (sort.equals(EventSort.EVENT_DATE)) {
+        if (sort.equals(EventSort.EVENT_DATE.name())) {
             sorting = "eventDate";
-        } else if (sort.equals(EventSort.VIEWS)) {
+        } else if (sort.equals(EventSort.VIEWS.name())) {
             sorting = "views";
         } else {
             sorting = "id";
@@ -270,7 +270,7 @@ public class EventServiceImpl implements EventService {
     public EventFullDto getPublicEventById(Long id, HttpServletRequest request) {
         log.info("Получение подробной информации об опубликованном событии с id = {}", id);
         Event event = checkEvent(id);
-        if (!event.getState().equals(EventState.PUBLISHED)) {
+        if (event.getState() == null || !event.getState().equals(EventState.PUBLISHED)) {
             log.warn("Нельзя получить информацию о событии, которое не опубликовано.");
             throw new NotFoundException("Нельзя получить информацию о событии, которое не опубликовано.");
         }

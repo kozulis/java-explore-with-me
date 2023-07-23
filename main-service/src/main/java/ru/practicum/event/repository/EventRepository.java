@@ -23,7 +23,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 //                    "where (:users is null or i.id in :users) " +
 //                    "and (:states is null or e.state in :states) " +
 //                    "and (:categories is null or c.id in :categories) " +
-//                    "and e.eventDate > :rangestart"
+//                    "and e.eventDate > :rangeStart"
 //    )
 //    List<Event> findAdminEvents(@Param("users") List<Long> users,
 //                                @Param("states") List<EventState> states,
@@ -48,4 +48,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                               @Param("paid") Boolean paid,
                               @Param("rangeStart") LocalDateTime rangeStart,
                               Pageable pageable);
+
+    List<Event> findAllByIdIn(List<Long> events);
+
 }

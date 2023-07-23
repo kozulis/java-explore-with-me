@@ -1,7 +1,6 @@
 package ru.practicum.event.service;
 
 import ru.practicum.event.dto.*;
-import ru.practicum.event.utils.EventSort;
 import ru.practicum.event.utils.EventState;
 
 import javax.servlet.http.HttpServletRequest;
@@ -24,7 +23,7 @@ public interface EventService {
     EventFullDto updateAdminEvent(Long eventId, UpdateEventAdminRequest updateEventAdminRequest);
 
     List<EventShortDto> getPublicEvents(String text, List<Long> categories, Boolean paid, LocalDateTime rangeStart,
-                                        LocalDateTime rangeEnd, Boolean onlyAvailable, EventSort sort, Integer from,
+                                        LocalDateTime rangeEnd, Boolean onlyAvailable, String sort, Integer from,
                                         Integer size, HttpServletRequest request);
 
     EventFullDto getPublicEventById(Long id, HttpServletRequest request);

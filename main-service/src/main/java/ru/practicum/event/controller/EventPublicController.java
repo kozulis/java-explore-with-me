@@ -3,6 +3,7 @@ package ru.practicum.event.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.event.dto.EventFullDto;
 import ru.practicum.event.dto.EventShortDto;
@@ -18,6 +19,7 @@ import java.util.List;
 @RestController
 @Slf4j
 @RequiredArgsConstructor
+@Validated
 @RequestMapping("/events")
 public class EventPublicController {
 
@@ -33,12 +35,12 @@ public class EventPublicController {
                                                        pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeEnd,
                                                @RequestParam(defaultValue = "false") Boolean onlyAvailable,
                                                @RequestParam(required = false) EventSort sort,
-                                               @RequestParam(defaultValue = "0") @Positive Integer from,
-                                               @RequestParam(defaultValue = "10") @PositiveOrZero Integer size,
+                                               @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
+                                               @RequestParam(defaultValue = "10") @Positive Integer size,
                                                HttpServletRequest request) {
         log.info("Запрос на получение событий с возможностью фильтрации.");
         return eventService.getPublicEvents(text, categories, paid, rangeStart, rangeEnd, onlyAvailable,
-                sort, from, size, request);
+                String.valueOf(sort), from, size, request);
     }
 
     @GetMapping("/{id}")
