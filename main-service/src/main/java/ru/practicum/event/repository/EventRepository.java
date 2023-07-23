@@ -16,30 +16,22 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     List<Event> findAllByInitiatorId(Long userId, Pageable pageable);
 
-//    @Query(
-//            "select e from Event as e " +
-//                    "join fetch e.initiator as i " +
-//                    "join fetch e.category as c " +
-//                    "where (:users is null or i.id in :users) " +
-//                    "and (:states is null or e.state in :states) " +
-//                    "and (:categories is null or c.id in :categories) " +
-//                    "and e.eventDate > :rangeStart"
-//    )
-//    List<Event> findAdminEvents(@Param("users") List<Long> users,
-//                                @Param("states") List<EventState> states,
-//                                @Param("categories") List<Long> categories,
-//                                @Param("rangeStart") LocalDateTime rangeStart,
-//                                PageRequest pageable);
-
-    //TODO Рабочий ли запрос(если нет - см выше)?LM
-    List<Event> findAllByInitiatorIdInAndStateInAndCategoryIdInAndEventDateIsAfter(List<Long> users, List<EventState> states, List<Long> categories,
-                                                                                   LocalDateTime rangeStart, PageRequest pageable);
+    @Query("select e from Event as e " +
+            "where (:users is null or e.initiator.id in :users) " +
+            "and (:states is null or e.state in :states) " +
+            "and (:categories is null or e.category.id in :categories) " +
+            "and e.eventDate > :rangeStart")
+    List<Event> findAdminEvents(@Param("users") List<Long> users,
+                                @Param("states") List<EventState> states,
+                                @Param("categories") List<Long> categories,
+                                @Param("rangeStart") LocalDateTime rangeStart,
+                                PageRequest pageable);
 
     @Query("select e from Event as e " +
             "where (upper(e.annotation) like upper(concat('%', :text, '%')) " +
             "or upper(e.description) like upper(concat('%', :text, '%')) or :text is null) " +
             "and e.state = :state " +
-            "and (:categories is null or e.category.id in (:categories)) " +
+            "and (:categories is null or e.category.id in :categories) " +
             "and (:paid is null or e.paid = :paid) " +
             "and e.eventDate >= :rangeStart")
     List<Event> getEventsSort(@Param("text") String text,
@@ -48,7 +40,5 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                               @Param("paid") Boolean paid,
                               @Param("rangeStart") LocalDateTime rangeStart,
                               Pageable pageable);
-
-    List<Event> findAllByIdIn(List<Long> events);
 
 }

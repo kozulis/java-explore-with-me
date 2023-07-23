@@ -47,6 +47,7 @@ public class RequestServiceImpl implements RequestService {
     }
 
     @Override
+    @Transactional
     public EventRequestStatusUpdateResult updateEventRequest(
             Long userId, Long eventId, EventRequestStatusUpdateRequest eventRequestStatusUpdateRequest) {
         log.info("Изменение статуса заявок на участие в событии с id = {}" +
@@ -85,6 +86,7 @@ public class RequestServiceImpl implements RequestService {
     }
 
     @Override
+    @Transactional
     public ParticipationRequestDto addPrivateEventRequest(Long userId, Long eventId) {
         log.info("Добавление запроса от пользователя с id = {} на участие в событии с id = {}.", userId, eventId);
         RequestStatus requestStatus;
@@ -124,6 +126,7 @@ public class RequestServiceImpl implements RequestService {
     }
 
     @Override
+    @Transactional
     public ParticipationRequestDto cancelPrivateEventRequest(Long userId, Long requestId) {
         log.info("Отмена запроса с id = {} от пользователя с id = {} на на участие в событии.", requestId, userId);
         checkUser(userId);

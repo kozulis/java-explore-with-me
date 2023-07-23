@@ -63,9 +63,12 @@ public class EventServiceImpl implements EventService {
         }
         User user = checkUser(userId);
         Category category = checkCategory(newEventDto.getCategory());
-        Event event = EventMapper.INSTANCE.toEvent(newEventDto, category, user);
+        EventState state = EventState.PENDING;
+        Long confirmedRequests = 0L;
+        Event event = eventRepository.save(EventMapper.INSTANCE.toEvent(newEventDto, category,
+                user, state, confirmedRequests));
         log.info("Событие сохранено.");
-        return EventMapper.INSTANCE.toEventFullDto(eventRepository.save((event)));
+        return EventMapper.INSTANCE.toEventFullDto(event);
     }
 
     @Override
@@ -96,6 +99,11 @@ public class EventServiceImpl implements EventService {
             event.setEventDate(eventDate);
         });
 
+        if (event.getState().equals(EventState.PUBLISHED)) {
+            log.warn("Нельзя изменить опубликованное событие.");
+            throw new ConflictException("Нельзя изменить опубликованное событие.");
+        }
+
         Optional.ofNullable(updateEventUserRequest.getAnnotation()).ifPresent(event::setAnnotation);
 
         Optional.ofNullable(updateEventUserRequest.getCategory()).ifPresent(catId -> {
@@ -116,13 +124,9 @@ public class EventServiceImpl implements EventService {
 
         Optional.ofNullable(updateEventUserRequest.getRequestModeration()).ifPresent(event::setRequestModeration);
 
-        Optional.ofNullable(updateEventUserRequest.getStateAction()).ifPresent(userStateAction -> {
-            switch (userStateAction) {
+        if (updateEventUserRequest.getStateAction() != null) {
+            switch (updateEventUserRequest.getStateAction()) {
                 case CANCEL_REVIEW:
-                    if (event.getState().equals(EventState.PUBLISHED)) {
-                        log.warn("Нельзя изменить опубликованное событие.");
-                        throw new ConflictException("Нельзя изменить опубликованное событие.");
-                    }
                     event.setState(EventState.CANCELED);
                     break;
                 case SEND_TO_REVIEW:
@@ -132,7 +136,7 @@ public class EventServiceImpl implements EventService {
                     log.warn("Указан неверный статус.");
                     throw new ConflictException("Указан неверный статус");
             }
-        });
+        }
 
         Optional.ofNullable(updateEventUserRequest.getTitle()).ifPresent(event::setTitle);
 
@@ -147,8 +151,7 @@ public class EventServiceImpl implements EventService {
                 "rangeStart {}, rangeEnd {}, from {}, size {}", users, states, categories, rangeStart, rangeEnd, from, size);
         validateDates(rangeStart, rangeEnd);
         PageRequest page = PageRequest.of(from, size);
-        //TODO Рабочий ли запрос(см репозиторий)?LM
-        List<Event> events = eventRepository.findAllByInitiatorIdInAndStateInAndCategoryIdInAndEventDateIsAfter(
+        List<Event> events = eventRepository.findAdminEvents(
                 users, states, categories, getRangeStart(rangeStart), page);
 
         if (rangeEnd != null) {
@@ -165,9 +168,9 @@ public class EventServiceImpl implements EventService {
         Event event = checkEvent(eventId);
 
         Optional.ofNullable(updateEventAdminRequest.getEventDate()).ifPresent(eventDate -> {
-            if (eventDate.isBefore(event.getPublishedOn().minusHours(1))) {
+            if (eventDate.isBefore(LocalDateTime.now())) {
                 log.warn("Дата начала изменяемого события должна быть не ранее чем за час от даты публикации.");
-                throw new ConflictException("дата начала изменяемого " +
+                throw new BadRequestException("дата начала изменяемого " +
                         "события должна быть не ранее чем за час от даты публикации");
             }
             event.setEventDate(eventDate);
@@ -193,9 +196,8 @@ public class EventServiceImpl implements EventService {
 
         Optional.ofNullable(updateEventAdminRequest.getRequestModeration()).ifPresent(event::setRequestModeration);
 
-
-        Optional.ofNullable(updateEventAdminRequest.getStateAction()).ifPresent(adminStateAction -> {
-            switch (adminStateAction) {
+        if (updateEventAdminRequest.getStateAction() != null) {
+            switch (updateEventAdminRequest.getStateAction()) {
                 case REJECT_EVENT:
                     if (event.getState().equals(EventState.PUBLISHED)) {
                         log.warn("Нельзя отклонить опубликованное событие.");
@@ -204,18 +206,18 @@ public class EventServiceImpl implements EventService {
                     event.setState(EventState.CANCELED);
                     break;
                 case PUBLISH_EVENT:
-                    if (!event.getState().equals(EventState.PENDING)) {
-                        log.warn("Нельзя изменить событие, если оно в состоянии ожидания публикации.");
-                        throw new ConflictException("Нельзя изменить событие, если оно в состоянии ожидания публикации.");
+                    if (event.getState() != (EventState.PENDING)) {
+                        log.warn("Событие должно быть в состоянии ожидания публикации.");
+                        throw new ConflictException("Событие должно быть в состоянии ожидания публикации.");
                     }
-                    event.setState(EventState.PENDING);
+                    event.setState(EventState.PUBLISHED);
                     event.setPublishedOn(LocalDateTime.now());
                     break;
                 default:
                     log.warn("Указан неверный статус.");
                     throw new ConflictException("Указан неверный статус");
             }
-        });
+        }
 
         Optional.ofNullable(updateEventAdminRequest.getTitle()).ifPresent(event::setTitle);
 

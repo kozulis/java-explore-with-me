@@ -10,6 +10,7 @@ import ru.practicum.event.dto.EventShortDto;
 import ru.practicum.event.dto.NewEventDto;
 import ru.practicum.event.model.Event;
 import ru.practicum.event.model.Location;
+import ru.practicum.event.utils.EventState;
 import ru.practicum.user.mapper.UserMapper;
 import ru.practicum.user.model.User;
 
@@ -27,7 +28,9 @@ public interface EventMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "category", source = "category")
     @Mapping(target = "initiator", source = "user")
-    Event toEvent(NewEventDto newEventDto, Category category, User user);
+    @Mapping(target = "state", source = "state")
+    @Mapping(target = "confirmedRequests", source = "confirmedRequests")
+    Event toEvent(NewEventDto newEventDto, Category category, User user, EventState state, Long confirmedRequests);
 
     @Mapping(target = "location.lat", source = "lat")
     @Mapping(target = "location.lon", source = "lon")

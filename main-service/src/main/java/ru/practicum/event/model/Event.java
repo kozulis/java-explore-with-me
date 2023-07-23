@@ -2,13 +2,11 @@ package ru.practicum.event.model;
 
 import lombok.*;
 import ru.practicum.category.model.Category;
-import ru.practicum.compilation.model.Compilation;
 import ru.practicum.event.utils.EventState;
 import ru.practicum.user.model.User;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Getter
 @Setter
@@ -64,9 +62,9 @@ public class Event {
 
     private String title;
 
-    //TODO ватафак?
-    @ManyToMany(mappedBy = "events")
-    private List<Compilation> compilations;
+    //TODO Убрать?
+//    @ManyToMany(mappedBy = "events")
+//    private List<Compilation> compilations;
 
     @Transient
     private Long views;
