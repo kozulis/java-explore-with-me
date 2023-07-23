@@ -290,7 +290,7 @@ public class EventServiceImpl implements EventService {
                 .app("main-service")
                 .uri(request.getRequestURI())
                 .ip(request.getRemoteAddr())
-                .timestamp(LocalDateTime.now())
+                .timestamp(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
                 .build();
         statsClient.saveStats(hitDto);
     }

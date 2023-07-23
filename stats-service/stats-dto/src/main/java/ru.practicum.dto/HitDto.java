@@ -24,6 +24,5 @@ public class HitDto {
     private String ip;
 
     @NotBlank(message = "timestamp не может быть пустым")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime timestamp;
+    private String timestamp;
 }
