@@ -31,7 +31,7 @@ public class Event {
     private Long confirmedRequests;
 
     @Column(name = "created_on")
-    private LocalDateTime createdOn; //default = NOW ?
+    private LocalDateTime createdOn;
 
     private String description;
 
