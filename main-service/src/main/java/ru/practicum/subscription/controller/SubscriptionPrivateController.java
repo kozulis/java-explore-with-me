@@ -27,9 +27,9 @@ public class SubscriptionPrivateController {
 
     private final SubscriptionService subscriptionService;
 
-    @PostMapping
+    @PostMapping("/{userForSubscribeId}")
     @ResponseStatus(HttpStatus.CREATED)
-    public SubscriptionDto addNewSubscriptionRequest(@PathVariable Long userId, @RequestParam Long userForSubscribeId) {
+    public SubscriptionDto addNewSubscriptionRequest(@PathVariable Long userId, @PathVariable Long userForSubscribeId) {
         log.info("Запрос от пользователя с id = {} на подписку событий от пользователя id = {}.", userId, userForSubscribeId);
         return subscriptionService.addNewSubscriptionRequest(userId, userForSubscribeId);
     }
@@ -47,9 +47,9 @@ public class SubscriptionPrivateController {
         return subscriptionService.getPrivateSubscriptionById(userId, subscriptionId);
     }
 
-    @GetMapping("/event")
+    @GetMapping("/{userForSubscribeId}/event")
     public List<EventShortDto> getPrivateEventsByUserId(@PathVariable Long userId,
-                                                        @RequestParam Long userForSubscribeId,
+                                                        @PathVariable Long userForSubscribeId,
                                                         @RequestParam(required = false) @DateTimeFormat(
                                                                 pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeStart,
                                                         @RequestParam(required = false) @DateTimeFormat(
@@ -62,12 +62,12 @@ public class SubscriptionPrivateController {
     }
 
     @GetMapping("/subscribers")
-    public List<SubscriberShortDto> getPrivateSubscribers(@PathVariable(name = "userId") Long userId) {
+    public List<SubscriberShortDto> getPrivateSubscribers(@PathVariable Long userId) {
         log.info("Запрос на получение списка подписок на пользователя с id = {}.", userId);
         return subscriptionService.getPrivateSubscribers(userId);
     }
 
-    @PatchMapping("/{subscriptionId}")
+    @PatchMapping("/subscribers/{subscriptionId}")
     public SubscriberShortDto updatePrivateSubscriptionRequest(@PathVariable Long userId,
                                                                @PathVariable Long subscriptionId,
                                                                @RequestParam SubscriptionStatus status) {

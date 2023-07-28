@@ -42,7 +42,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                               Pageable pageable);
 
     @Query("select e from Event as e " +
-            "where e.initiator = :userId " +
+            "where e.initiator.id = :userId " +
             "and e.state = :state " +
             "and e.eventDate > :rangeStart " +
             "order by e.eventDate asc")

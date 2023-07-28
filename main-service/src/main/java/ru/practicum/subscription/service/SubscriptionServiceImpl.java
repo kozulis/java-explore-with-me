@@ -24,7 +24,6 @@ import ru.practicum.user.model.User;
 import ru.practicum.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,87 +39,87 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     @Transactional
-    public SubscriptionDto addNewSubscriptionRequest(Long userId, Long userForSubscribeId) {
-        log.info("Запрос от пользователя с id = {} на подписку событий от пользователя id = {}.", userId, userForSubscribeId);
-        User user = checkUser(userId);
+    public SubscriptionDto addNewSubscriptionRequest(Long initiatorId, Long userForSubscribeId) {
+        log.info("Запрос от пользователя с id = {} на подписку событий от пользователя id = {}.", initiatorId, userForSubscribeId);
+        User user = checkUser(initiatorId);
         User userForSubscribe = checkUser(userForSubscribeId);
-        if (userId.equals(userForSubscribeId)) {
+        if (initiatorId.equals(userForSubscribeId)) {
             log.warn("Пользователь не может подписаться на самого себя.");
-            throw new BadRequestException("Пользователь не может подписаться на самого себя.");
+            throw new ConflictException("Пользователь не может подписаться на самого себя.");
         }
-        if (subscriptionRepository.existsByUserIdAndUserForSubscribeId(userId, userForSubscribeId)) {
+        if (subscriptionRepository.existsByInitiatorIdAndUserForSubscribeId(initiatorId, userForSubscribeId)) {
             log.warn("Нельзя добавить повторный запрос.");
             throw new ConflictException("Нельзя добавить повторный запрос.");
         }
         Subscription subscription = Subscription.builder()
-                .user(user)
+                .initiator(user)
                 .userForSubscribe(userForSubscribe)
                 .status(SubscriptionStatus.WAITING)
                 .build();
-        log.info("Создан запрос от пользователя с id = {} на подписку событий от пользователя id = {}.", userId, userForSubscribeId);
+        log.info("Создан запрос от пользователя с id = {} на подписку событий от пользователя id = {}.", initiatorId, userForSubscribeId);
         return SubscriptionMapper.INSTANCE.toSubscriptionDto(subscriptionRepository.save(subscription));
     }
 
     @Override
-    public List<SubscriptionShortDto> getPrivateSubscriptions(Long userId, SubscriptionStatus status) {
-        log.info("Получение списка собственных подписок пользователя с id = {}.", userId);
-        checkUser(userId);
+    public List<SubscriptionShortDto> getPrivateSubscriptions(Long initiatorId, SubscriptionStatus status) {
+        log.info("Получение списка собственных подписок пользователя с id = {}.", initiatorId);
+        checkUser(initiatorId);
         List<Subscription> subscriptionList;
         if (status == null) {
-            subscriptionList = subscriptionRepository.findAllByUserId(userId);
+            subscriptionList = subscriptionRepository.findAllByInitiatorId(initiatorId);
         } else {
-            subscriptionList = subscriptionRepository.findAllByUserIdAndStatus(userId, status);
+            subscriptionList = subscriptionRepository.findAllByInitiatorIdAndStatus(initiatorId, status);
         }
-        log.info("Получен список собственных подписок пользователя с id = {}.", userId);
+        log.info("Получен список собственных подписок пользователя с id = {}.", initiatorId);
         return subscriptionList.stream()
                 .map(SubscriptionMapper.INSTANCE::toSubscriptionShortDto)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public SubscriptionDto getPrivateSubscriptionById(Long userId, Long subscriptionId) {
-        log.info("Получение подписки с id = {} от пользователя с id = {}.", subscriptionId, userId);
-        checkUser(userId);
+    public SubscriptionDto getPrivateSubscriptionById(Long initiatorId, Long subscriptionId) {
+        log.info("Получение подписки с id = {} от пользователя с id = {}.", subscriptionId, initiatorId);
+        checkUser(initiatorId);
         Subscription subscription = checkSubscription(subscriptionId);
-        log.info("Получена подписка с id = {} от пользователя с id = {}.", subscriptionId, userId);
+        log.info("Получена подписка с id = {} от пользователя с id = {}.", subscriptionId, initiatorId);
         return SubscriptionMapper.INSTANCE.toSubscriptionDto(subscription);
     }
 
     @Override
-    public List<EventShortDto> getPrivateEventsByUserId(Long userId, Long userForSubscribeId, LocalDateTime rangeStart,
+    public List<EventShortDto> getPrivateEventsByUserId(Long initiatorId, Long userForSubscribeId, LocalDateTime rangeStart,
                                                         LocalDateTime rangeEnd, Integer from, Integer size) {
-        log.info("Получение подписчиком с id = {} списка событий пользователя с id = {}.", userId, userForSubscribeId);
-        checkUser(userId);
+        log.info("Получение подписчиком с id = {} списка событий пользователя с id = {}.", initiatorId, userForSubscribeId);
+        checkUser(initiatorId);
         checkUser(userForSubscribeId);
         validateDates(rangeStart, rangeEnd);
-        if (userId.equals(userForSubscribeId)) {
-            log.warn("Пользователь не может подписаться на самого себя.");
-            throw new BadRequestException("Пользователь не может подписаться на самого себя.");
+        if (initiatorId.equals(userForSubscribeId)) {
+            log.warn("Нельзя получить список собственных событий.");
+            throw new ConflictException("Нельзя получить список собственных событий.");
         }
         List<Event> events;
-        Subscription subscription = subscriptionRepository.findByUserIdAndUserForSubscribeId(userId, userForSubscribeId);
+        Subscription subscription = subscriptionRepository.findByInitiatorIdAndUserForSubscribeId(initiatorId, userForSubscribeId);
         if (subscription == null) {
-            return Collections.emptyList();
-        } else {
-            if (!subscription.getStatus().equals(SubscriptionStatus.CONFIRMED)) {
-                log.info("Нельзя получить список событий, подписка еще не подтверждена организатором.");
-                throw new BadRequestException("Нельзя получить список событий, подписка еще не подтверждена организатором.");
-            }
-            PageRequest page = PageRequest.of(from, size);
-            events = eventRepository.findSubscriptionEvents(userForSubscribeId, EventState.PUBLISHED, getRangeStart(rangeStart), page);
-            if (rangeEnd != null) {
-                events = getEventsBeforeRangeEnd(events, rangeEnd);
-            }
+            log.info("Подписка на пользователя с id = {} не найдена.", userForSubscribeId);
+            throw new NotFoundException(String.format("Подписка на пользователя с id = %d не найдена.", userForSubscribeId));
+        }
+        if (!subscription.getStatus().equals(SubscriptionStatus.CONFIRMED)) {
+            log.info("Нельзя получить список событий, подписка еще не подтверждена организатором.");
+            throw new BadRequestException("Нельзя получить список событий, подписка еще не подтверждена организатором.");
+        }
+        PageRequest page = PageRequest.of(from, size);
+        events = eventRepository.findSubscriptionEvents(userForSubscribeId, EventState.PUBLISHED, getRangeStart(rangeStart), page);
+        if (rangeEnd != null) {
+            events = getEventsBeforeRangeEnd(events, rangeEnd);
         }
         return events.stream().map(EventMapper.INSTANCE::toEventShortDto).collect(Collectors.toList());
     }
 
     @Override
-    public List<SubscriberShortDto> getPrivateSubscribers(Long userId) {
-        log.info("Получение списка подписок на пользователя с id = {}", userId);
-        checkUser(userId);
-        log.info("Получен список подписок на пользователя с id = {}", userId);
-        return subscriptionRepository.findAllByUserForSubscribeId(userId).stream()
+    public List<SubscriberShortDto> getPrivateSubscribers(Long initiatorId) {
+        log.info("Получение списка подписок на пользователя с id = {}", initiatorId);
+        checkUser(initiatorId);
+        log.info("Получен список подписок на пользователя с id = {}", initiatorId);
+        return subscriptionRepository.findAllByUserForSubscribeId(initiatorId).stream()
                 .map(SubscriptionMapper.INSTANCE::toSubscriberShortDto)
                 .collect(Collectors.toList());
     }
@@ -146,14 +145,14 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     @Transactional
-    public void deletePrivateSubscriptionRequest(Long userId, Long subscriptionId) {
-        log.info("Удаление от пользователя с id = {} подписки с id = {}.", userId, subscriptionId);
-        checkUser(userId);
+    public void deletePrivateSubscriptionRequest(Long initiatorId, Long subscriptionId) {
+        log.info("Удаление от пользователя с id = {} подписки с id = {}.", initiatorId, subscriptionId);
+        checkUser(initiatorId);
         Subscription subscription = checkSubscription(subscriptionId);
-        if (!userId.equals(subscription.getUser().getId())) {
+        if (!initiatorId.equals(subscription.getInitiator().getId())) {
             throw new ConflictException("Можно удалять только собственные подписки.");
         }
-        log.info("Подписка с id = {} удалена пользователем с id = {}.", subscriptionId, userId);
+        log.info("Подписка с id = {} удалена пользователем с id = {}.", subscriptionId, initiatorId);
         subscriptionRepository.deleteById(subscriptionId);
     }
 

@@ -1,7 +1,6 @@
 package ru.practicum.subscription.mapper;
 
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 import ru.practicum.event.mapper.EventMapper;
 import ru.practicum.subscription.dto.SubscriberShortDto;
@@ -15,7 +14,15 @@ public interface SubscriptionMapper {
 
     SubscriptionMapper INSTANCE = Mappers.getMapper(SubscriptionMapper.class);
 
-    SubscriptionDto toSubscriptionDto(Subscription subscription);
+        SubscriptionDto toSubscriptionDto(Subscription subscription);
+//    default SubscriptionDto toSubscriptionDto(Subscription subscription) {
+//        return SubscriptionDto.builder()
+//                .id(subscription.getId())
+//                .initiator(subscription.getInitiator())
+//                .userForSubscribe(subscription.getUserForSubscribe())
+//                .status(subscription.getStatus())
+//                .build();
+//    }
 
     SubscriptionShortDto toSubscriptionShortDto(Subscription subscription);
 

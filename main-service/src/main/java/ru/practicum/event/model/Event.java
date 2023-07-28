@@ -62,10 +62,6 @@ public class Event {
 
     private String title;
 
-    //TODO Убрать?
-//    @ManyToMany(mappedBy = "events")
-//    private List<Compilation> compilations;
-
     @Transient
     private Long views;
 

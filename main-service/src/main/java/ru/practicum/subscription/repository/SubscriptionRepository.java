@@ -7,13 +7,13 @@ import ru.practicum.subscription.utils.SubscriptionStatus;
 import java.util.List;
 
 public interface SubscriptionRepository extends JpaRepository<Subscription, Long> {
-    Boolean existsByUserIdAndUserForSubscribeId(Long userId, Long userForSubscribeId);
+    Boolean existsByInitiatorIdAndUserForSubscribeId(Long userId, Long userForSubscribeId);
 
-    List<Subscription> findAllByUserId(Long uerId);
+    List<Subscription> findAllByInitiatorId(Long uerId);
 
-    List<Subscription> findAllByUserIdAndStatus(Long userId, SubscriptionStatus status);
+    List<Subscription> findAllByInitiatorIdAndStatus(Long userId, SubscriptionStatus status);
 
-    Subscription findByUserIdAndUserForSubscribeId(Long userId, Long userForSubscribeId);
+    Subscription findByInitiatorIdAndUserForSubscribeId(Long userId, Long userForSubscribeId);
 
     List<Subscription> findAllByUserForSubscribeId(Long userId);
 

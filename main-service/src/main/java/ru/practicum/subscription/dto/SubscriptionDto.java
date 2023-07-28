@@ -13,7 +13,7 @@ import ru.practicum.user.model.User;
 @Builder
 public class SubscriptionDto {
     private Long id;
-    private User user;
+    private User initiator;
     private User userForSubscribe;
     private SubscriptionStatus status;
 }

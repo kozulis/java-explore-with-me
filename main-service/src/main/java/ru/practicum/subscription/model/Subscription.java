@@ -18,13 +18,14 @@ public class Subscription {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
+    @ManyToOne/*(fetch = FetchType.LAZY)*/
+    @JoinColumn(name = "initiator")
+    private User initiator;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_for_subscribe_id")
+    @ManyToOne/*(fetch = FetchType.LAZY)*/
+    @JoinColumn(name = "user_for_subscribe")
     private User userForSubscribe;
 
+    @Enumerated(EnumType.STRING)
     private SubscriptionStatus status;
 }

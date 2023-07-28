@@ -13,7 +13,7 @@ import ru.practicum.user.dto.UserShortDto;
 @Builder
 public class SubscriberShortDto {
     private Long id;
-    private UserShortDto user;
+    private UserShortDto initiator;
     private SubscriptionStatus status;
 }
 
