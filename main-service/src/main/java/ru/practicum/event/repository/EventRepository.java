@@ -41,4 +41,14 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                               @Param("rangeStart") LocalDateTime rangeStart,
                               Pageable pageable);
 
+    @Query("select e from Event as e " +
+            "where e.initiator.id = :userId " +
+            "and e.state = :state " +
+            "and e.eventDate > :rangeStart " +
+            "order by e.eventDate asc")
+    List<Event> findSubscriptionEvents(@Param("userId") Long userId,
+                                       @Param("state") EventState state,
+                                       @Param("rangeStart") LocalDateTime rangeStart,
+                                       PageRequest pageable);
+
 }

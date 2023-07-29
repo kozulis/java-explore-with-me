@@ -31,7 +31,7 @@ public class Event {
     private Long confirmedRequests;
 
     @Column(name = "created_on")
-    private LocalDateTime createdOn; //default = NOW ?
+    private LocalDateTime createdOn;
 
     private String description;
 
@@ -61,10 +61,6 @@ public class Event {
     private EventState state;
 
     private String title;
-
-    //TODO Убрать?
-//    @ManyToMany(mappedBy = "events")
-//    private List<Compilation> compilations;
 
     @Transient
     private Long views;
